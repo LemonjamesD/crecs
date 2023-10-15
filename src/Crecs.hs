@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Crecs () where
 
@@ -8,6 +9,8 @@ import Crecs.Components
 import Control.Monad.IO.Class
 import Data.IORef
 import Control.Monad.Trans.Reader
+import Data.Typeable
+import Data.Maybe
 
 data Some c where
   Some :: c a => a -> Some c
@@ -30,10 +33,16 @@ newWorld = do
     components = comps
   }
 
-addComponent :: (Component a) => a -> World ()
+addComponent :: (Typeable a, Component a) => a -> World ()
 addComponent component = do
   context <- getWorldContext
   let comps = components context
   somed <- liftIO $ newIORef (Some component)
   liftIO $ modifyIORef comps (\x -> x ++ [somed])
-  
+
+getComponents :: forall a. (Typeable a, Component a) => World [IORef a]
+getComponents = do
+  context <- getWorldContext
+  let comps = components context
+  readComps <- liftIO $ readIORef comps
+  return $ mapMaybe (\x -> cast x) readComps
