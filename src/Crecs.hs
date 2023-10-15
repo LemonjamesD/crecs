@@ -11,6 +11,7 @@ import Data.IORef
 import Control.Monad.Trans.Reader
 import Data.Typeable
 import Data.Maybe
+import GHC.Utils.Monad
 
 data Some c where
   Some :: c a => a -> Some c
@@ -45,4 +46,4 @@ getComponents = do
   context <- getWorldContext
   let comps = components context
   readComps <- liftIO $ readIORef comps
-  return $ mapMaybe (\x -> cast x) readComps
+  liftIO $ mapMaybeM (\x -> modifyIORef (\(Some y) -> cast y) x) readComps
